@@ -28,7 +28,8 @@
 
 <p>Print a banner upon application startup. It is assumed that the <code>@Default Configuration</code> bean is provided by the application:</p>
 
-<div class="highlight highlight-source-js"><pre><span class="pl-c">/**</span>
+<div class="highlight highlight-source-js"><pre><span class="pl-c">// Using JSDoc semantics</span>
+<span class="pl-c">/**</span>
 <span class="pl-c"> * import org.apache.commons.configuration.Configuration</span>
 <span class="pl-c"> * import java.util.logging.Level</span>
 <span class="pl-c"> *</span>
@@ -43,13 +44,12 @@
 
 <p>Run FlyWay migrations:</p>
 
-<div class="highlight highlight-source-js"><pre><span class="pl-c">/**</span>
-<span class="pl-c"> * import javax.sql.DataSource</span>
-<span class="pl-c"> * import org.flywaydb.core.Flyway</span>
-<span class="pl-c"> *</span>
-<span class="pl-c"> * @Startup(order = 2)</span>
-<span class="pl-c"> * @Resource(lookup = "jdbc/MyDB") DataSource ds</span>
-<span class="pl-c">*/</span>
+<div class="highlight highlight-source-js"><pre><span class="pl-c">// Using prologue directives</span>
+<span class="pl-s"><span class="pl-pds">"</span>import javax.sql.DataSource<span class="pl-pds">"</span></span>;
+<span class="pl-s"><span class="pl-pds">"</span>import org.flywaydb.core.Flyway<span class="pl-pds">"</span></span>;
+
+<span class="pl-s"><span class="pl-pds">"</span>@Startup(order = 2)<span class="pl-pds">"</span></span>;
+<span class="pl-s"><span class="pl-pds">"</span>@Resource(lookup = <span class="pl-pds">"</span></span>jdbc<span class="pl-k">/</span>MyDB<span class="pl-s"><span class="pl-pds">"</span>) DataSource ds<span class="pl-pds">"</span></span>;
 
 <span class="pl-k">var</span> flyway <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Flyway</span>();
 <span class="pl-smi">flyway</span>.<span class="pl-en">setDataSource</span>(ds);
