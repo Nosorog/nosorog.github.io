@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Nosorog by Nosorog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Nosorog</h1>
+      <h2 class="project-tagline">CDI injections for server-side JavaScript (and more)</h2>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="preface" class="anchor" href="#preface" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Preface</h1>
+
+<p>For Java EE developers, JavaScript has been around for years. Introduced in 2012, Nashorn is a modern and performant JavaScript engine for JVM. JavaScript is a perfect candidate for being first-class citizen of the Java EE ecosystem. What prevents it from being one is lack of seamless integration with Java EE platform and application components - something similar to what CDI does for Java EE applications.</p>
+
+<p>The goal of the project is to provide such an integration, together with several other productivity features.</p>
+
+<h1>
+<a id="examples" class="anchor" href="#examples" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Examples</h1>
+
+<p>Print a banner upon application startup. It is assumed that the <code>@Default Configuration</code> bean is provided by the application:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-c">/**</span>
+<span class="pl-c"> * import org.apache.commons.configuration.Configuration</span>
+<span class="pl-c"> * import java.util.logging.Level</span>
+<span class="pl-c"> *</span>
+<span class="pl-c"> * @Startup(order = 1)</span>
+<span class="pl-c"> * @Inject Configuration config</span>
+<span class="pl-c">*/</span>
+
+<span class="pl-smi">$LOG</span>.<span class="pl-en">log</span>(<span class="pl-smi">Level</span>.<span class="pl-c1">INFO</span>, <span class="pl-s"><span class="pl-pds">"</span>Starting MyApplication {0} b{1}<span class="pl-pds">"</span></span>, [
+        <span class="pl-smi">config</span>.<span class="pl-en">getString</span>(<span class="pl-s"><span class="pl-pds">"</span>myapp.version<span class="pl-pds">"</span></span>),
+        <span class="pl-smi">config</span>.<span class="pl-en">getString</span>(<span class="pl-s"><span class="pl-pds">"</span>myapp.build<span class="pl-pds">"</span></span>)
+    ]);</pre></div>
+
+<p>Run FlyWay migrations:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-c">/**</span>
+<span class="pl-c"> * import javax.sql.DataSource</span>
+<span class="pl-c"> * import org.flywaydb.core.Flyway</span>
+<span class="pl-c"> *</span>
+<span class="pl-c"> * @Startup(order = 2)</span>
+<span class="pl-c"> * @Resource(lookup = "jdbc/MyDB") DataSource ds</span>
+<span class="pl-c">*/</span>
+
+<span class="pl-k">var</span> flyway <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Flyway</span>();
+<span class="pl-smi">flyway</span>.<span class="pl-en">setDataSource</span>(ds);
+<span class="pl-smi">flyway</span>.<span class="pl-en">setBaselineOnMigrate</span>(<span class="pl-c1">true</span>);
+<span class="pl-smi">flyway</span>.<span class="pl-en">migrate</span>();</pre></div>
+
+<p>Do periodic housekeeping:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-c">/**</span>
+<span class="pl-c"> * @Name("Housekeeping")</span>
+<span class="pl-c"> * @Description("Do some housekeeping once a day")</span>
+<span class="pl-c"> * @Schedule("02 4 * * *")</span>
+<span class="pl-c"> *</span>
+<span class="pl-c"> * import my.package.HouseKeeping</span>
+<span class="pl-c"> *</span>
+<span class="pl-c"> * @Inject HouseKeeping task</span>
+<span class="pl-c">*/</span>
+
+<span class="pl-smi">task</span>.<span class="pl-en">run</span>();</pre></div>
+
+<p>Log HTTP session creation:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-c">/**</span>
+<span class="pl-c"> * @Name("SessionLog")</span>
+<span class="pl-c"> * @Observes @Initialized(SessionScoped.class) HttpSession session</span>
+<span class="pl-c"> *</span>
+<span class="pl-c"> * import my.package.log.HTTPSessionLogRecord</span>
+<span class="pl-c"> * import javax.persistence.EntityManager</span>
+<span class="pl-c"> * import javax.transaction.UserTransaction</span>
+<span class="pl-c"> * </span>
+<span class="pl-c"> * @PersistenceContext EntityManager em</span>
+<span class="pl-c"> * @Resource UserTransaction tx</span>
+<span class="pl-c">*/</span>
+
+<span class="pl-smi">tx</span>.<span class="pl-en">begin</span>();
+<span class="pl-k">var</span> record <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">HTTPSessionLogRecord</span>(session);
+<span class="pl-smi">em</span>.<span class="pl-en">persist</span>(record);
+<span class="pl-smi">tx</span>.<span class="pl-en">commit</span>();</pre></div>
+
+<h1>
+<a id="features" class="anchor" href="#features" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Features</h1>
+
+<h2>
+<a id="cdi-support" class="anchor" href="#cdi-support" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>CDI Support</h2>
+
+<p>In addition to <code>@Inject</code>, the following Java EE resource injections are supported:</p>
+
+<ul>
+<li><code>@Resource</code></li>
+<li><code>@EJB</code></li>
+<li>
+<code>@PersistenceUnit</code> / <code>@PersistenceContext</code>
+</li>
+<li><code>@WebServiceRef</code></li>
+</ul>
+
+<p>The syntax generally mirrors that of Java code. Injections are defined inside a script header, JSDoc-style.</p>
+
+<h2>
+<a id="execution-modes" class="anchor" href="#execution-modes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Execution Modes</h2>
+
+<p>Scripts can be invoked in the following ways:</p>
+
+<ol>
+<li>Programmatic (using Java or REST APIs)</li>
+<li>Interactive (using web console or IDE plugin)</li>
+<li>On startup (using the <code>@Startup</code> annotation)</li>
+<li>Scheduled/periodic (using the <code>@Schedule</code> annotation)</li>
+<li>Triggered by CDI event (using the <code>@Observes</code> annotation)</li>
+</ol>
+
+<h2>
+<a id="script-libraries" class="anchor" href="#script-libraries" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Script Libraries</h2>
+
+<p>The runtime will look for scripts in the following sources:</p>
+
+<ul>
+<li>Application library: a read-only script collection that is packaged and deployed together with the application</li>
+<li>User library: a read-write collection that resides in a filesystem.</li>
+</ul>
+
+<h2>
+<a id="miscellaneous" class="anchor" href="#miscellaneous" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Miscellaneous</h2>
+
+<h3>
+<a id="imports" class="anchor" href="#imports" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Imports</h3>
+
+<p>A typical server-side script usually begins with a number of surrogate "imports" like this:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> Foo <span class="pl-k">=</span> <span class="pl-smi">my</span>.<span class="pl-smi">package</span>.<span class="pl-smi">Foo</span>;
+<span class="pl-k">var</span> Bar <span class="pl-k">=</span> <span class="pl-smi">my</span>.<span class="pl-smi">package</span>.<span class="pl-smi">Bar</span>;
+<span class="pl-k">var</span> Configuration <span class="pl-k">=</span> <span class="pl-smi">org</span>.<span class="pl-smi">apache</span>.<span class="pl-smi">commons</span>.<span class="pl-smi">configuration</span>.<span class="pl-smi">Configuration</span>;
+<span class="pl-k">var</span> Level <span class="pl-k">=</span> <span class="pl-c1">java</span>.<span class="pl-smi">util</span>.<span class="pl-smi">logging</span>.<span class="pl-smi">Level</span>;
+<span class="pl-k">...</span>
+<span class="pl-k">var</span> foo <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">Foo</span>();</pre></div>
+
+<p>Now one can easily get rid of such a surrogates by using <code>import</code> directives in a script header. Wildcards and static imports are supported.</p>
+
+<h3>
+<a id="logging" class="anchor" href="#logging" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Logging</h3>
+
+<p>The runtime provides an implicit <code>$LOG</code> variable that is initialized with a <code>java.util.logging.Logger</code> instance. The logger name is composed of a common prefix + (unique) script name.</p>
+
+<h1>
+<a id="use-cases" class="anchor" href="#use-cases" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Use cases</h1>
+
+<h2>
+<a id="application-startup" class="anchor" href="#application-startup" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Application startup</h2>
+
+<p>A typical Java EE application's initialization process is usually comprised of the following steps:</p>
+
+<ol>
+<li>Print a banner with application name, version and build ID/timestamp;</li>
+<li>Run Flyway/LiquiBase migrations;</li>
+<li>Generate test data (if on a dev or QA box);</li>
+<li>Read and validate configuration;</li>
+<li>Create working directories if they do not exist;</li>
+<li>Set up logging system (e.g., instruct JUL to use custom log directory);</li>
+<li>Configure JAX-RS multipart handling;</li>
+<li>etc.</li>
+</ol>
+
+<p>Nearly all of these could be implemented as scripts, with the clear execution order and ability to enable/disable some of them without recompilation/redeployment. For example, a developer might intentionally disable database migrations on his box.</p>
+
+<p>Generating test data is a particular use case. Modern development approaches assume rapidly changing schema and/or using NoSQL databases. In such cases, generating test data from application code is much more convenient than shipping tons of pre-generated SQL or JSON data. Additionally, test data parameteres could be changed on the fly, without application recompilation. Producing a completely different test data set would be as simlpe as tweaking a script and reloading your application.</p>
+
+<h2>
+<a id="developer-productivity" class="anchor" href="#developer-productivity" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Developer productivity</h2>
+
+<p>Real-life data is usually orders of magnitude more complex than any test data imaginable.</p>
+
+<p>Simply open web console on a live application and:</p>
+
+<ul>
+<li>isolate a bug that manifests in production only, without connecting debugger to application server and without suspending application threads;</li>
+<li>see how a particular JPQL query performs on live data;</li>
+<li>try new data processing algorithms and other ideas;</li>
+<li>etc.</li>
+</ul>
+
+<p>Of course running arbitrary code on a production system is a double-edged sword. One should fully realize the risks of potentially corrupting production data by running untested code.</p>
+
+<h2>
+<a id="maintenance--monitoring" class="anchor" href="#maintenance--monitoring" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Maintenance &amp; Monitoring</h2>
+
+<p>If you need to quickly provide application specific metrics, and consider JMX a sledge-hammer, you can use server-side scripts as a poor man's alternative. Similarly, if there are some maintenance tasks to be done on occasion, implement them as scripts, so even a non-programmer could invoke them simply by selecting from a list.</p>
+
+<h2>
+<a id="fluid-logic" class="anchor" href="#fluid-logic" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Fluid Logic</h2>
+
+<p>The Fluid Logic pattern is described in Adam Bien's <a href="http://realworldpatterns.com">Real World Java EE Patterns</a> book:</p>
+
+<blockquote>
+<p>Java is a static language with emphasis on its strong typing. Java is well suitable for the implementation
+of well-defned, stable business logic. Algorithms that often change require recompilation and even
+redeployment of the whole application.</p>
+
+<p>Strong typing and the static nature of Java are features and drawbacks at the same time. For integration
+purposes, dynamic languages such as JavaScript, Ruby, or Python are better suitable and more effcient.
+With Java it is hardly possible to evaluate or interpret business logic at runtime.</p>
+</blockquote>
+
+<p>With CDI injections available, Fluid Logic can be implemented in a more natural way and with less boilerplate code. All the considerations on testing, performance, security and robustness apply; refer to the corresponding book chapter for further info.</p>
+
+      <footer class="site-footer">
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
